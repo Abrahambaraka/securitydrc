@@ -8,13 +8,8 @@ import { useTexture } from "@react-three/drei";
 
 function Flag() {
   const mesh = useRef<THREE.Mesh<THREE.PlaneGeometry>>(null!);
-  const [textureError, setTextureError] = useState(false);
-  
   const texture = useTexture(
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Flag_of_the_Democratic_Republic_of_the_Congo.svg/1024px-Flag_of_the_Democratic_Republic_of_the_Congo.svg.png",
-    () => {}, 
-    () => {}, 
-    () => setTextureError(true)
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Flag_of_the_Democratic_Republic_of_the_Congo.svg/1024px-Flag_of_the_Democratic_Republic_of_the_Congo.svg.png"
   );
   
   if (texture) {
@@ -37,8 +32,6 @@ function Flag() {
       positions.needsUpdate = true;
     }
   });
-
-  if (textureError) return null;
 
   return (
     <mesh ref={mesh}>
