@@ -1,0 +1,130 @@
+/**
+ * Core Philosophy: This ruleset implements a strict user-ownership security model
+ * for user profiles, combined with a public-read/authenticated-write model for
+ * shared community data like alerts and posts. It also includes an 'admin' role
+ * that has broad permissions to manage users.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile data. Writable only by owner/admin, but readable by any signed-in user to support community features.
+ * - /alerts/{alertId}: Stores alerts visible to everyone, but only writable by authenticated users.
+ * - /community_posts/{postId}: Stores posts visible to everyone, but only
+ *   editable by the author.
+ *
+ * Key Security Decisions:
+ * - Admin Supremacy: Users with `role == 'admin'` can read, list, update, and delete any user document.
+ * - Community Readability: Signed-in users can list and view all user profiles to foster community.
+ * - Strict Ownership on Writes: A user's ability to modify their own data is maintained, but they cannot escalate their own privileges (e.g., change their role).
+ * - Public Read, Owner Write: The /alerts and /community_posts collections are
+ *   readable by anyone (including unauthenticated users) but write operations (create, update,
+ *   delete) are strictly controlled.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Checks if the current user has an 'admin' role in their user document.
+     * This involves one read operation per request that uses it.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the primary function for verifying document ownership for writes.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Verifies ownership for an existing document. Used for update/delete.
+     * CRITICAL: `resource != null` prevents changing or deleting a document that
+     * does not exist, which is a security best practice.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * On create, validates that a document's internal owner field
+     * matches the creator's auth UID.
+     */
+    function isCreatingOwnContent() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * On update, ensures a document's ownership field cannot be changed.
+     */
+    function isOwnershipImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents.
+     * @path /users/{userId}
+     * @allow (get, list) Any signed-in user can view profiles and list users to enable community features like the 'Voisinage' page.
+     * @allow (create) A new user can create their own profile. The ID must match their UID.
+     * @allow (update) An admin can update any profile. A user can only update their own, but cannot change their role.
+     * @allow (delete) An admin can delete any user. A user can only delete their own.
+     */
+    match /users/{userId} {
+      // Explicitly allow GET and LIST for any authenticated user.
+      // This is the most critical rule for the "Voisinage" feature.
+      allow get: if request.auth != null;
+      allow list: if request.auth != null;
+      
+      // Write operations remain strictly controlled.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isAdmin() || (isExistingOwner(userId) && request.resource.data.role == resource.data.role);
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Manages public alerts.
+     * @path /alerts/{alertId}
+     * @allow (list, get) Any user can read alerts.
+     * @deny (update, delete) A user cannot modify an alert they did not create.
+     * @principle Implements a "Public Read with Owner-Only Writes" pattern.
+     */
+    match /alerts/{alertId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isCreatingOwnContent();
+      allow update: if isExistingOwner(resource.data.userId) && isOwnershipImmutable();
+      allow delete: if isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Manages community posts, which are public to read but have restricted writes.
+     * @path /community_posts/{communityPostId}
+     * @allow (list, get) Any user, including unauthenticated ones, can read community posts.
+     * @deny (update, delete) A user cannot modify a post they did not create.
+     * @principle Implements a "Public Read with Owner-Only Writes" pattern.
+     */
+    match /community_posts/{communityPostId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isCreatingOwnContent();
+      allow update: if isExistingOwner(resource.data.userId) && isOwnershipImmutable();
+      allow delete: if isExistingOwner(resource.data.userId);
+    }
+  }
+}

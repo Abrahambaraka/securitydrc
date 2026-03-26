@@ -1,0 +1,277 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the QuartierSecure application with detailed profile information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier of the user, matching the document ID."
+        },
+        "role": {
+          "type": "string",
+          "description": "User role, e.g., 'resident', 'admin'.",
+          "default": "resident"
+        },
+        "signInProvider": {
+          "type": "string",
+          "description": "The authentication provider used for sign-up, e.g., 'password', 'google.com'."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time the user account was created.",
+          "format": "date-time"
+        },
+        "verifiedPhone": {
+          "type": "boolean",
+          "description": "Flag indicating if the user's phone number has been verified.",
+          "default": false
+        },
+        "verifiedEmail": {
+          "type": "boolean",
+          "description": "Flag indicating if the user's email has been verified.",
+          "default": false
+        },
+        "identity": {
+          "type": "object",
+          "description": "User's personal identity information.",
+          "properties": {
+            "firstName": { "type": "string" },
+            "lastName": { "type": "string" },
+            "gender": { "type": "string", "enum": ["Homme", "Femme", "Autre"] },
+            "birthDate": { "type": "string", "format": "date" },
+            "profilePictureUrl": { "type": "string", "format": "uri" },
+            "nationality": { "type": "string" },
+            "pseudo": { "type": "string", "description": "User's unique public nickname." },
+            "description": { "type": "string", "description": "A short biography or description of the user." }
+          },
+          "required": ["firstName", "lastName"]
+        },
+        "address": {
+          "type": "object",
+          "description": "User's address and location information.",
+          "properties": {
+            "country": { "type": "string" },
+            "city": { "type": "string" },
+            "municipality": { "type": "string" },
+            "quartier": { "type": "string" },
+            "street": { "type": "string" },
+            "plotNumber": { "type": "string" },
+            "postalCode": { "type": "string" },
+            "gpsPosition": { "type": "object", "properties": { "lat": { "type": "number" }, "lng": { "type": "number" } } }
+          }
+        },
+        "civilStatus": {
+          "type": "object",
+          "description": "User's civil status.",
+          "properties": {
+            "maritalStatus": { "type": "string", "enum": ["Célibataire", "Marié(e)", "Veuf(ve)"] },
+            "spouseName": { "type": "string" },
+            "childrenCount": { "type": "integer" },
+            "childrenNames": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "education": {
+          "type": "object",
+          "description": "User's education and profession.",
+          "properties": {
+            "level": { "type": "string" },
+            "field": { "type": "string" },
+            "currentJob": { "type": "string" },
+            "employer": { "type": "string" },
+            "experienceYears": { "type": "integer" },
+            "skills": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "contact": {
+          "type": "object",
+          "description": "User's contact information.",
+          "properties": {
+            "phone": { "type": "string" },
+            "email": { "type": "string", "format": "email" }
+          },
+          "required": ["email"]
+        },
+        "community": {
+          "type": "object",
+          "description": "User's community-specific information.",
+          "properties": {
+            "housingType": { "type": "string", "enum": ["Locataire", "Propriétaire"] },
+            "isNeighborhoodAssociationMember": { "type": "boolean" },
+            "associationName": { "type": "string" },
+            "residenceBadgeNumber": { "type": "string" },
+            "emergencyContactName": { "type": "string" },
+            "emergencyContactPhone": { "type": "string" },
+            "housePictureUrl": { "type": "string", "format": "uri" },
+            "validatedByChief": { "type": "boolean" }
+          }
+        },
+        "preferences": {
+          "type": "object",
+          "description": "User's application preferences.",
+          "properties": {
+            "preferredLanguage": { "type": "string", "enum": ["Français", "Anglais", "Swahili"] },
+            "notificationsEnabled": { "type": "boolean" },
+            "preferredCommunication": { "type": "string", "enum": ["SMS", "Courriel", "Application"] },
+            "wantsToJoinGroup": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["id", "identity", "contact"]
+    },
+    "Alert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Alert",
+      "type": "object",
+      "description": "Represents an alert created by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the alert.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created the alert. (Relationship: User 1:N Alert)"
+        },
+        "userPseudo": {
+          "type": "string",
+          "description": "The public nickname of the user who created the alert."
+        },
+        "userProfilePictureUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The profile picture URL of the user who created the alert."
+        },
+        "alertType": {
+          "type": "string",
+          "description": "The type of alert (e.g., 'Theft', 'Suspicious Activity')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the alert."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location of the alert."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "The date and time the alert was created.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the alert (e.g., 'Open', 'Resolved')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "alertType",
+        "description",
+        "location",
+        "creationDate",
+        "status"
+      ]
+    },
+    "CommunityPost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CommunityPost",
+      "type": "object",
+      "description": "Represents a post in the community forum.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the community post.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created the post. (Relationship: User 1:N CommunityPost)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the community post."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the community post."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "The date and time the post was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "content",
+        "creationDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Uses path-based ownership for private user data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/alerts/{alertId}",
+        "definition": {
+          "entityName": "Alert",
+          "schema": {
+            "$ref": "#/backend/entities/Alert"
+          },
+          "description": "Stores public alerts. Anyone can read, but only authenticated users can create. Includes 'userId' for identifying the author and enabling ownership-based rules.",
+          "params": [
+            {
+              "name": "alertId",
+              "description": "The unique identifier of the alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/community_posts/{communityPostId}",
+        "definition": {
+          "entityName": "CommunityPost",
+          "schema": {
+            "$ref": "#/backend/entities/CommunityPost"
+          },
+          "description": "Stores community posts. Anyone can read posts, but only the creating user can edit/delete. Includes 'userId' for identifying the author and enabling ownership-based rules.",
+          "params": [
+            {
+              "name": "communityPostId",
+              "description": "The unique identifier of the community post."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the 'QuartierSecure' application, focusing on security, scalability, and clear authorization. It prioritizes Authorization Independence by denormalizing necessary authorization data, enabling robust security rules and atomic operations.  The structure adheres to the DBAC principle, relying on `request.auth.uid` for authorization. Segregation ensures each collection has a homogeneous security posture, simplifying rules and enhancing security.  \n\nAuthorization Independence is achieved primarily through path-based ownership for user-specific data. For publicly shared data, such as alerts and community posts, user IDs are included in each document to facilitate identifying the author and enabling ownership-based rules. This structure allows for secure public list operations (reading all alerts) while restricting write access to the document owner."
+  }
+}
